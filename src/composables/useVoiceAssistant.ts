@@ -1,6 +1,14 @@
 import { ref, onUnmounted } from 'vue'
 
-export type VoiceAction = 'next' | 'prev' | 'repeat' | 'timer-start' | 'timer-pause' | 'timer-reset' | 'close' | 'unknown'
+export type VoiceAction =
+  | 'next'
+  | 'prev'
+  | 'repeat'
+  | 'timer-start'
+  | 'timer-pause'
+  | 'timer-reset'
+  | 'close'
+  | 'unknown'
 
 export interface VoiceAssistantOptions {
   onNext?: () => void
@@ -20,8 +28,9 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
   const isSupported = ref(false)
   const errorMessage = ref('')
 
-  // Speech Recognition reference
-  let recognition: any = null
+  let active = false
+  let lastActionTimestamp = 0
+  let ignoreVoiceUntil = 0
 
   // Check Web Speech API support
   const SpeechRecognition =
@@ -51,7 +60,6 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         osc.start()
         osc.stop(ctx.currentTime + 0.25)
       } else if (type === 'pause') {
-        // Human-Computer Interaction: Tone menurun yang lembut menandakan aksi jeda (Pause)
         osc.frequency.setValueAtTime(659.25, ctx.currentTime) // E5
         osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.16) // A4
         gain.gain.setValueAtTime(0.14, ctx.currentTime)
@@ -59,7 +67,6 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         osc.start()
         osc.stop(ctx.currentTime + 0.22)
       } else if (type === 'timer-done') {
-        // High alert alarm chime
         osc.type = 'triangle'
         osc.frequency.setValueAtTime(880, ctx.currentTime)
         osc.frequency.setValueAtTime(1046.5, ctx.currentTime + 0.2)
@@ -69,14 +76,13 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
         osc.start()
         osc.stop(ctx.currentTime + 0.8)
       } else {
-        // Subtle ping
         osc.frequency.setValueAtTime(440, ctx.currentTime)
         gain.gain.setValueAtTime(0.1, ctx.currentTime)
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.12)
         osc.start()
         osc.stop(ctx.currentTime + 0.12)
       }
-    } catch (e) {
+    } catch {
       // AudioContext muted/unsupported
     }
   }
@@ -85,74 +91,131 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
   const speakText = (text: string, onFinish?: () => void) => {
     if (!('speechSynthesis' in window)) return
 
-    window.speechSynthesis.cancel() // Stop ongoing speech
+    try {
+      window.speechSynthesis.cancel()
 
-    const cleanText = text.replace(/[*_#`]/g, '')
-    const utterance = new SpeechSynthesisUtterance(cleanText)
-    utterance.lang = 'id-ID'
-    utterance.rate = 1.0
-    utterance.pitch = 1.0
+      const cleanText = text.replace(/[*_#`]/g, '')
+      const utterance = new SpeechSynthesisUtterance(cleanText)
+      utterance.lang = 'id-ID'
+      utterance.rate = 1.0
+      utterance.pitch = 1.0
 
-    // Try finding an Indonesian voice if available
-    const voices = window.speechSynthesis.getVoices()
-    const idVoice = voices.find((v) => v.lang.startsWith('id'))
-    if (idVoice) {
-      utterance.voice = idVoice
-    }
+      const voices = window.speechSynthesis.getVoices()
+      const idVoice = voices.find((v) => v.lang.startsWith('id'))
+      if (idVoice) {
+        utterance.voice = idVoice
+      }
 
-    isSpeaking.value = true
+      isSpeaking.value = true
+      // Cegah mikrofon mendengar suara speaker sendiri selama TTS berbicara
+      const estimatedDurationMs = Math.min(Math.max(cleanText.length * 75, 1000), 4000)
+      ignoreVoiceUntil = Date.now() + estimatedDurationMs
 
-    utterance.onend = () => {
+      utterance.onend = () => {
+        isSpeaking.value = false
+        ignoreVoiceUntil = Date.now() + 400
+        if (onFinish) onFinish()
+      }
+
+      utterance.onerror = () => {
+        isSpeaking.value = false
+        ignoreVoiceUntil = 0
+      }
+
+      window.speechSynthesis.speak(utterance)
+    } catch {
       isSpeaking.value = false
-      if (onFinish) onFinish()
+      ignoreVoiceUntil = 0
     }
-
-    utterance.onerror = () => {
-      isSpeaking.value = false
-    }
-
-    window.speechSynthesis.speak(utterance)
   }
 
   const stopSpeaking = () => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
       isSpeaking.value = false
+      ignoreVoiceUntil = 0
     }
   }
 
-  // Command parser
+  // Text Normalizer to strip punctuation and extra spaces
+  const clean = (text: string): string => {
+    return text
+      .toLowerCase()
+      .replace(/[.,!?;:"'()[\]{}]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  // Command parser with robust pattern matching for Indonesian voice instructions
   const parseCommand = (phrase: string): VoiceAction => {
-    const p = phrase.toLowerCase().trim()
+    const p = clean(phrase)
+    if (!p) return 'unknown'
 
-    // 1. Next step
+    // 1. Timer Pause / Jeda (Fleksibel: mencakup semua variasi kata jeda/stop/pause)
     if (
-      p.includes('lanjut') ||
-      p.includes('next') ||
-      p.includes('berikutnya') ||
-      p.includes('selanjutnya') ||
-      p.includes('maju') ||
-      p.includes('langkah depan')
+      p.includes('jeda') ||
+      p.includes('pause') ||
+      p.includes('paus') ||
+      p.includes('pos') ||
+      p.includes('stop') ||
+      p.includes('setop') ||
+      p.includes('berhenti') ||
+      p.includes('hentikan') ||
+      p.includes('tahan') ||
+      p.includes('tunda') ||
+      p.includes('tunggu') ||
+      p.includes('mati') ||
+      p.includes('hold') ||
+      p.includes('freeze')
     ) {
-      return 'next'
+      return 'timer-pause'
     }
 
-    // 2. Previous step
+    // 2. Timer Reset
     if (
-      p.includes('kembali') ||
-      p.includes('mundur') ||
-      p.includes('sebelumnya') ||
-      p.includes('back') ||
-      p.includes('ulang langkah')
+      p.includes('reset timer') ||
+      p.includes('ulang timer') ||
+      p.includes('atur ulang timer') ||
+      p.includes('kembalikan timer') ||
+      p.includes('nolkan timer') ||
+      p.includes('reset') ||
+      p.includes('atur ulang')
     ) {
-      return 'prev'
+      return 'timer-reset'
     }
 
-    // 3. Repeat / Read step
+    // 3. Timer Start / Lanjutkan Timer (Dievaluasi sebelum navigasi 'lanjut')
+    if (
+      p.includes('mulai timer') ||
+      p.includes('start timer') ||
+      p.includes('lanjutkan timer') ||
+      p.includes('lanjut timer') ||
+      p.includes('teruskan timer') ||
+      p.includes('jalankan timer') ||
+      p.includes('jalan timer') ||
+      p.includes('pasang timer') ||
+      p.includes('nyalakan timer') ||
+      p.includes('setel timer') ||
+      p.includes('hitung waktu') ||
+      p.includes('mulai') ||
+      p.includes('start') ||
+      p.includes('jalankan') ||
+      p === 'timer'
+    ) {
+      return 'timer-start'
+    }
+
+    // 4. Repeat / Read step (Baca Ulang)
     if (
       p.includes('baca ulang') ||
-      p.includes('ulangi') ||
+      p.includes('bacakan ulang') ||
       p.includes('baca lagi') ||
+      p.includes('bacakan lagi') ||
+      p.includes('ulangi baca') ||
+      p.includes('ulang baca') ||
+      p.includes('ulangi') ||
+      p.includes('ulang') ||
+      p.includes('bacakan') ||
       p.includes('baca') ||
       p.includes('suarakan') ||
       p.includes('repeat')
@@ -160,67 +223,73 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
       return 'repeat'
     }
 
-    // 4. Timer Pause / Jeda (Wajib dievaluasi sebelum generic 'timer' agar 'jeda timer' tidak tertukar)
+    // 5. Next step (Lanjut)
     if (
-      p.includes('jeda timer') ||
-      p.includes('jeda') ||
-      p.includes('pause timer') ||
-      p.includes('pause') ||
-      p.includes('stop timer') ||
-      p.includes('berhenti timer') ||
-      p.includes('hentikan timer') ||
-      p.includes('matikan timer') ||
-      p.includes('tahan timer') ||
-      p.includes('tahan') ||
-      p === 'stop' ||
-      p === 'berhenti'
+      p.includes('lanjut') ||
+      p.includes('selanjutnya') ||
+      p.includes('berikutnya') ||
+      p.includes('langkah depan') ||
+      p.includes('langkah berikutnya') ||
+      p.includes('langkah selanjutnya') ||
+      p.includes('maju') ||
+      p.includes('next') ||
+      p.includes('terus')
     ) {
-      return 'timer-pause'
+      return 'next'
     }
 
-    // 5. Timer Reset
+    // 6. Previous step (Kembali)
     if (
-      p.includes('reset timer') ||
-      p.includes('ulang timer') ||
-      p.includes('kembalikan timer') ||
-      p === 'reset'
+      p.includes('kembali') ||
+      p.includes('mundur') ||
+      p.includes('sebelumnya') ||
+      p.includes('langkah sebelumnya') ||
+      p.includes('balik') ||
+      p.includes('back')
     ) {
-      return 'timer-reset'
+      return 'prev'
     }
 
-    // 6. Timer Start / Lanjut
+    // 7. Finish / Close mode (Selesai)
     if (
-      p.includes('mulai timer') ||
-      p.includes('jalan timer') ||
-      p.includes('jalankan timer') ||
-      p.includes('start timer') ||
-      p.includes('lanjutkan timer') ||
-      p.includes('lanjut timer') ||
-      p.includes('hitung waktu') ||
-      p.includes('pasang timer') ||
-      p.includes('nyalakan timer') ||
-      p === 'timer' ||
-      p.startsWith('timer ')
+      p.includes('selesai') ||
+      p.includes('keluar') ||
+      p.includes('tutup') ||
+      p.includes('beres') ||
+      p.includes('exit') ||
+      p.includes('close') ||
+      p.includes('akhiri') ||
+      p.includes('sudah')
     ) {
-      return 'timer-start'
-    }
-
-    // 7. Close mode
-    if (p.includes('keluar') || p.includes('tutup') || p.includes('selesai masak')) {
       return 'close'
     }
 
     return 'unknown'
   }
 
+  // Handle detected voice transcript and trigger corresponding action
   const handleRecognizedText = (text: string) => {
+    // Abaikan jika suara terdeteksi saat speaker/narator sedang berbunyi
+    if (Date.now() < ignoreVoiceUntil) {
+      console.log(`[VoiceAssistant] Diabaikan karena suara berasal dari narator: "${text}"`)
+      return
+    }
+
     transcript.value = text
     const action = parseCommand(text)
+    console.log(`[VoiceAssistant] Dengar: "${text}" -> Aksi: ${action}`)
 
     if (action !== 'unknown') {
-      lastCommand.value = `Perintah terdeteksi: "${text}" (${action})`
+      const now = Date.now()
+      // Cooldown 800ms agar tidak tereksekusi ganda
+      if (now - lastActionTimestamp < 800) {
+        return
+      }
+      lastActionTimestamp = now
 
-      // HCI: Umpan balik suara adaptif
+      lastCommand.value = `Perintah: "${text}" (${action})`
+
+      // Umpan balik suara
       if (action === 'timer-pause') {
         playSoundFeedback('pause')
       } else {
@@ -251,77 +320,106 @@ export function useVoiceAssistant(options: VoiceAssistantOptions = {}) {
           break
       }
     } else {
-      lastCommand.value = `Mendengar: "${text}" (Katakan 'Lanjut', 'Kembali', atau 'Baca Ulang')`
+      lastCommand.value = `Mendengar: "${text}"`
     }
   }
 
-  const initRecognition = () => {
-    if (!SpeechRecognition) return
+  // Setup SpeechRecognition
+  let recognition: any = null
 
-    recognition = new SpeechRecognition()
-    recognition.continuous = true
-    recognition.interimResults = false
-    recognition.lang = 'id-ID'
+  if (SpeechRecognition) {
+    try {
+      recognition = new SpeechRecognition()
+      recognition.continuous = true
+      recognition.interimResults = false
+      recognition.lang = 'id-ID'
 
-    recognition.onresult = (event: any) => {
-      const current = event.resultIndex
-      const resultText = event.results[current][0].transcript
-      handleRecognizedText(resultText)
-    }
-
-    recognition.onerror = (event: any) => {
-      console.warn('Speech recognition error:', event.error)
-      if (event.error === 'not-allowed') {
-        errorMessage.value = 'Izin mikrofon ditolak oleh browser. Mohon izinkan akses mikrofon.'
-        isListening.value = false
+      recognition.onstart = () => {
+        isListening.value = true
+        errorMessage.value = ''
+        console.log('[VoiceAssistant] Mikrofon aktif dan mendengarkan...')
       }
-    }
 
-    recognition.onend = () => {
-      // Auto-restart if user still wants it listening (continuous mode)
-      if (isListening.value) {
-        try {
-          recognition.start()
-        } catch {
-          // Ignore duplicate start errors
+      recognition.onresult = (event: any) => {
+        const current = event.resultIndex
+        if (event.results && event.results[current]) {
+          const text = event.results[current][0]?.transcript || ''
+          if (text) {
+            handleRecognizedText(text)
+          }
         }
       }
+
+      recognition.onerror = (event: any) => {
+        console.warn('[VoiceAssistant] Error:', event.error)
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          errorMessage.value = 'Izin mikrofon belum diberikan atau diblokir. Mohon izinkan mikrofon di browser Anda.'
+          isListening.value = false
+          active = false
+        } else if (event.error === 'audio-capture') {
+          errorMessage.value = 'Mikrofon tidak terdeteksi pada perangkat Anda.'
+          isListening.value = false
+          active = false
+        } else if (event.error === 'network') {
+          errorMessage.value = 'Koneksi suara browser terputus.'
+        }
+      }
+
+      recognition.onend = () => {
+        console.log('[VoiceAssistant] Sesi mikrofon terhenti sementara.')
+        if (active) {
+          // Restart dengan jeda 250ms agar Chrome melepas sesi sebelumnya
+          setTimeout(() => {
+            if (active) {
+              try {
+                recognition.start()
+              } catch {
+                // Ignore jika sudah berjalan
+              }
+            }
+          }, 250)
+        } else {
+          isListening.value = false
+        }
+      }
+    } catch (e) {
+      console.error('[VoiceAssistant] Init error:', e)
     }
   }
 
   const startListening = () => {
     if (!SpeechRecognition) {
-      errorMessage.value = 'Browser Anda belum mendukung Web Speech Recognition. Gunakan Google Chrome / Edge.'
+      errorMessage.value = 'Browser Anda belum mendukung Web Speech Recognition. Gunakan Google Chrome atau Microsoft Edge.'
       return
     }
 
-    if (!recognition) {
-      initRecognition()
-    }
+    active = true
+    errorMessage.value = ''
 
-    try {
-      isListening.value = true
-      errorMessage.value = ''
-      recognition.start()
-      playSoundFeedback('ping')
-    } catch (e) {
-      console.warn('Could not start recognition', e)
+    if (recognition) {
+      try {
+        recognition.start()
+        playSoundFeedback('ping')
+      } catch {
+        // Jika sudah aktif, abaikan
+      }
     }
   }
 
   const stopListening = () => {
+    active = false
     isListening.value = false
     if (recognition) {
       try {
         recognition.stop()
-      } catch (e) {
+      } catch {
         // Ignore
       }
     }
   }
 
   const toggleListening = () => {
-    if (isListening.value) {
+    if (active || isListening.value) {
       stopListening()
     } else {
       startListening()

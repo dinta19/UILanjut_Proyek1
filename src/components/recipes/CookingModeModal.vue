@@ -97,15 +97,20 @@ const startTimer = (triggeredByVoice = false) => {
 }
 
 const pauseTimer = (triggeredByVoice = false) => {
-  // Hanya jeda jika timer sedang berjalan atau ada sisa waktu
-  if (isTimerRunning.value || timerSecondsRemaining.value > 0) {
+  // Hanya jeda jika timer sedang berjalan
+  if (isTimerRunning.value) {
     isTimerRunning.value = false
     isTimerPaused.value = true
     clearInterval(timerInterval)
 
-    // Human-Computer Interaction: Berikan umpan balik verbal bahwa perintah suara berhasil dieksekusi
+    // Berikan konfirmasi suara singkat tanpa mengucapkan kata pemicu
     if (autoSpeakEnabled.value && triggeredByVoice) {
-      voice.speakText('Timer telah dijeda. Katakan mulai timer untuk melanjutkan.')
+      voice.speakText('Timer dijeda.')
+    }
+  } else if (!isTimerPaused.value && timerSecondsRemaining.value > 0) {
+    isTimerPaused.value = true
+    if (autoSpeakEnabled.value && triggeredByVoice) {
+      voice.speakText('Timer dijeda.')
     }
   }
 }
@@ -205,180 +210,189 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="cooking-modal-backdrop">
-    <div class="cooking-mode-container">
-      <!-- Top Navigation & Status Bar -->
-      <header class="cooking-header">
-        <div class="header-left">
-          <span class="cooking-badge">🧑‍🍳 COOKING ASSISTANT MODE</span>
-          <h2 class="recipe-name-pill">{{ recipe.title }}</h2>
-        </div>
+  <Teleport to="body">
+    <div class="cooking-modal-backdrop">
+      <div class="cooking-mode-container">
+        <!-- Top Navigation & Status Bar -->
+        <header class="cooking-header">
+          <div class="header-left">
+            <span class="cooking-badge">🧑‍🍳 COOKING ASSISTANT MODE</span>
+            <h2 class="recipe-name-pill">{{ recipe.title }}</h2>
+          </div>
 
-        <div class="header-center">
-          <div class="voice-status-indicator" :class="{ listening: voice.isListening.value }">
-            <span class="mic-wave-pulse" v-if="voice.isListening.value"></span>
-            <span class="mic-emoji">{{ voice.isListening.value ? '🎙️' : '🔇' }}</span>
-            <span class="voice-status-text">
-              {{ voice.isListening.value ? 'Mikrofon Aktif (Mendengarkan...)' : 'Mikrofon Nonaktif' }}
-            </span>
+          <div class="header-center">
+            <div class="voice-status-indicator" :class="{ listening: voice.isListening.value }">
+              <span class="mic-wave-pulse" v-if="voice.isListening.value"></span>
+              <span class="mic-emoji">{{ voice.isListening.value ? '🎙️' : '🔇' }}</span>
+              <span class="voice-status-text">
+                {{ voice.isListening.value ? 'Mikrofon Aktif (Mendengarkan...)' : 'Mikrofon Nonaktif' }}
+              </span>
+              <button
+                class="mic-toggle-btn"
+                @click="voice.toggleListening()"
+                :title="voice.isListening.value ? 'Matikan Suara' : 'Aktifkan Suara'"
+              >
+                {{ voice.isListening.value ? 'Jeda Mic' : 'Nyalakan Mic' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="header-right">
             <button
-              class="mic-toggle-btn"
-              @click="voice.toggleListening()"
-              :title="voice.isListening.value ? 'Matikan Suara' : 'Aktifkan Suara'"
+              class="action-pill-btn"
+              :class="{ active: autoSpeakEnabled }"
+              @click="autoSpeakEnabled = !autoSpeakEnabled"
+              title="Otomatis bacakan instruksi saat langkah berganti"
             >
-              {{ voice.isListening.value ? 'Jeda Mic' : 'Nyalakan Mic' }}
+              <span>{{ autoSpeakEnabled ? '🔊 Suara Narator Aktif' : '🔇 Narator Senyap' }}</span>
+            </button>
+
+            <button class="close-cooking-btn" @click="emit('close')" title="Keluar dari Mode Masak (Esc)">
+              ✕ Keluar
             </button>
           </div>
+        </header>
+
+        <!-- Step Progress Bar -->
+        <div class="progress-bar-wrapper">
+          <div class="progress-fill" :style="{ width: `${progressPercentage}%` }"></div>
         </div>
 
-        <div class="header-right">
-          <button
-            class="action-pill-btn"
-            :class="{ active: autoSpeakEnabled }"
-            @click="autoSpeakEnabled = !autoSpeakEnabled"
-            title="Otomatis bacakan instruksi saat langkah berganti"
-          >
-            <span>{{ autoSpeakEnabled ? '🔊 Suara Narator Aktif' : '🔇 Narator Senyap' }}</span>
-          </button>
-
-          <button class="close-cooking-btn" @click="emit('close')" title="Keluar dari Mode Masak (Esc)">
-            ✕ Keluar
-          </button>
-        </div>
-      </header>
-
-      <!-- Step Progress Bar -->
-      <div class="progress-bar-wrapper">
-        <div class="progress-fill" :style="{ width: `${progressPercentage}%` }"></div>
-      </div>
-
-      <!-- Main Stage Content -->
-      <main class="cooking-main-stage">
-        <!-- Live Transcript Feedback Pill -->
-        <div v-if="voice.lastCommand.value" class="voice-transcript-banner fade-in">
-          <span class="ai-spark">✨</span>
-          <span class="transcript-content">{{ voice.lastCommand.value }}</span>
-        </div>
-
-        <div class="step-card-hero">
-          <div class="step-badge-large">
-            <span class="badge-sub">LANGKAH</span>
-            <span class="badge-num">{{ currentStepIndex + 1 }}</span>
-            <span class="badge-total">dari {{ totalSteps }}</span>
+        <!-- Main Stage Content -->
+        <main class="cooking-main-stage">
+          <!-- Microphone Error / Warning Banner -->
+          <div v-if="voice.errorMessage.value" class="voice-error-banner fade-in">
+            <span class="error-icon">⚠️</span>
+            <span class="error-msg">{{ voice.errorMessage.value }}</span>
+            <button class="retry-mic-btn" @click="voice.startListening()">Coba Aktifkan Mic</button>
           </div>
 
-          <div class="step-content-area">
-            <h1 class="step-headline">{{ currentStep.title }}</h1>
-            <p class="step-instruction-big">{{ currentStep.instruction }}</p>
+          <!-- Live Transcript Feedback Pill -->
+          <div v-if="voice.lastCommand.value" class="voice-transcript-banner fade-in">
+            <span class="ai-spark">✨</span>
+            <span class="transcript-content">{{ voice.lastCommand.value }}</span>
+          </div>
 
-            <div v-if="currentStep.tip" class="step-pro-tip">
-              <span class="tip-icon">💡</span>
-              <div class="tip-text">
-                <strong>Tips Dapur:</strong> {{ currentStep.tip }}
-              </div>
+          <div class="step-card-hero">
+            <div class="step-badge-large">
+              <span class="badge-sub">LANGKAH</span>
+              <span class="badge-num">{{ currentStepIndex + 1 }}</span>
+              <span class="badge-total">dari {{ totalSteps }}</span>
             </div>
 
-            <!-- Interactive Smart Timer Widget inside step -->
-            <div
-              v-if="currentStep.durationMinutes || timerSecondsRemaining > 0"
-              class="step-timer-box"
-              :class="{ 'timer-paused': isTimerPaused, 'timer-running': isTimerRunning }"
-            >
-              <div class="timer-display">
-                <span class="timer-icon">{{ isTimerPaused ? '⏸️' : (isTimerRunning ? '⏳' : '⏱️') }}</span>
-                <span class="timer-digits" :class="{ 'paused-digits': isTimerPaused }">{{ formattedTimer }}</span>
-                <div class="timer-label-col">
-                  <span class="timer-label">Durasi Masak</span>
-                  <span v-if="isTimerPaused" class="timer-state-pill paused">⏸️ DIJEDA</span>
-                  <span v-else-if="isTimerRunning" class="timer-state-pill running">⏳ BERJALAN</span>
+            <div class="step-content-area">
+              <h1 class="step-headline">{{ currentStep.title }}</h1>
+              <p class="step-instruction-big">{{ currentStep.instruction }}</p>
+
+              <div v-if="currentStep.tip" class="step-pro-tip">
+                <span class="tip-icon">💡</span>
+                <div class="tip-text">
+                  <strong>Tips Dapur:</strong> {{ currentStep.tip }}
                 </div>
               </div>
 
-              <div class="timer-actions">
-                <button
-                  v-if="!isTimerRunning"
-                  class="btn-timer-action play"
-                  @click="startTimer(false)"
-                >
-                  {{ isTimerPaused ? '▶ Lanjutkan' : '▶ Mulai Timer' }}
-                </button>
-                <button
-                  v-else
-                  class="btn-timer-action pause"
-                  @click="pauseTimer(false)"
-                >
-                  ⏸ Jeda Timer
-                </button>
-                <button class="btn-timer-action reset" @click="resetTimer(false)">
-                  ↺ Reset
-                </button>
-              </div>
+              <!-- Interactive Smart Timer Widget inside step -->
+              <div
+                v-if="currentStep.durationMinutes || timerSecondsRemaining > 0"
+                class="step-timer-box"
+                :class="{ 'timer-paused': isTimerPaused, 'timer-running': isTimerRunning }"
+              >
+                <div class="timer-display">
+                  <span class="timer-icon">{{ isTimerPaused ? '⏸️' : (isTimerRunning ? '⏳' : '⏱️') }}</span>
+                  <span class="timer-digits" :class="{ 'paused-digits': isTimerPaused }">{{ formattedTimer }}</span>
+                  <div class="timer-label-col">
+                    <span class="timer-label">Durasi Masak</span>
+                    <span v-if="isTimerPaused" class="timer-state-pill paused">⏸️ DIJEDA</span>
+                    <span v-else-if="isTimerRunning" class="timer-state-pill running">⏳ BERJALAN</span>
+                  </div>
+                </div>
 
-              <!-- Live HCI Visual Cue when Paused -->
-              <div v-if="isTimerPaused" class="timer-paused-notice">
-                <span>💬 Katakan <strong>"Mulai Timer"</strong> atau <strong>"Lanjut"</strong> untuk meneruskan hitungan</span>
+                <div class="timer-actions">
+                  <button
+                    v-if="!isTimerRunning"
+                    class="btn-timer-action play"
+                    @click="startTimer(false)"
+                  >
+                    {{ isTimerPaused ? '▶ Lanjutkan' : '▶ Mulai Timer' }}
+                  </button>
+                  <button
+                    v-else
+                    class="btn-timer-action pause"
+                    @click="pauseTimer(false)"
+                  >
+                    ⏸ Jeda Timer
+                  </button>
+                  <button class="btn-timer-action reset" @click="resetTimer(false)">
+                    ↺ Reset
+                  </button>
+                </div>
+
+                <!-- Live HCI Visual Cue when Paused -->
+                <div v-if="isTimerPaused" class="timer-paused-notice">
+                  <span>💬 Katakan <strong>"Mulai Timer"</strong> atau <strong>"Lanjutkan Timer"</strong> untuk meneruskan hitungan</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <!-- Bottom Tactile Bar & Voice Commands Quick Guide -->
-      <footer class="cooking-footer">
-        <!-- Voice Command Cheatsheet for Kitchen User -->
-        <div class="voice-cheatsheet">
-          <span class="cheat-label">🗣️ Perintah Suara yang Dikenali:</span>
-          <div class="cheat-chips">
-            <span class="cheat-chip" @click="nextStep()">👉 "Lanjut"</span>
-            <span class="cheat-chip" @click="prevStep()">👈 "Kembali"</span>
-            <span class="cheat-chip" @click="readCurrentStep()">📢 "Baca Ulang"</span>
-            <span class="cheat-chip" @click="startTimer(true)">⏱️ "Mulai Timer"</span>
-            <span class="cheat-chip chip-pause" @click="pauseTimer(true)">⏸️ "Jeda Timer"</span>
-            <span class="cheat-chip" @click="resetTimer(true)">↺ "Reset Timer"</span>
-            <span class="cheat-chip" @click="emit('close')">🚪 "Selesai"</span>
+        <!-- Bottom Tactile Bar & Voice Commands Quick Guide -->
+        <footer class="cooking-footer">
+          <!-- Voice Command Cheatsheet for Kitchen User -->
+          <div class="voice-cheatsheet">
+            <span class="cheat-label">🗣️ Perintah Suara yang Dikenali:</span>
+            <div class="cheat-chips">
+              <span class="cheat-chip" @click="nextStep()">👉 "Lanjut"</span>
+              <span class="cheat-chip" @click="prevStep()">👈 "Kembali"</span>
+              <span class="cheat-chip" @click="readCurrentStep()">📢 "Baca Ulang"</span>
+              <span class="cheat-chip" @click="startTimer(true)">⏱️ "Mulai Timer"</span>
+              <span class="cheat-chip" :class="{ 'chip-pause': isTimerRunning }" @click="pauseTimer(true)">⏸️ "Jeda Timer"</span>
+              <span class="cheat-chip" @click="resetTimer(true)">↺ "Reset Timer"</span>
+              <span class="cheat-chip" @click="emit('close')">🚪 "Selesai"</span>
+            </div>
           </div>
-        </div>
 
-        <!-- Big Navigation Buttons -->
-        <div class="step-action-buttons">
-          <button
-            class="btn-step-nav prev"
-            :disabled="currentStepIndex === 0"
-            @click="prevStep"
-          >
-            ← Langkah Sebelumnya
-          </button>
+          <!-- Big Navigation Buttons -->
+          <div class="step-action-buttons">
+            <button
+              class="btn-step-nav prev"
+              :disabled="currentStepIndex === 0"
+              @click="prevStep"
+            >
+              ← Langkah Sebelumnya
+            </button>
 
-          <button class="btn-step-speak" @click="readCurrentStep" title="Bacakan instruksi langkah ini">
-            <span>📢 {{ voice.isSpeaking.value ? 'Sedang Membaca...' : 'Bacakan Ulang' }}</span>
-          </button>
+            <button class="btn-step-speak" @click="readCurrentStep" title="Bacakan instruksi langkah ini">
+              <span>📢 {{ voice.isSpeaking.value ? 'Sedang Membaca...' : 'Bacakan Ulang' }}</span>
+            </button>
 
-          <button
-            class="btn-step-nav next"
-            v-if="currentStepIndex < totalSteps - 1"
-            @click="nextStep"
-          >
-            Langkah Selanjutnya →
-          </button>
+            <button
+              class="btn-step-nav next"
+              v-if="currentStepIndex < totalSteps - 1"
+              @click="nextStep"
+            >
+              Langkah Selanjutnya →
+            </button>
 
-          <button
-            class="btn-step-nav finish"
-            v-else
-            @click="emit('close')"
-          >
-            🎉 Selesai Memasak!
-          </button>
-        </div>
-      </footer>
+            <button
+              class="btn-step-nav finish"
+              v-else
+              @click="emit('close')"
+            >
+              🎉 Selesai Memasak!
+            </button>
+          </div>
+        </footer>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
 .cooking-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: 99999;
   background-color: #12100e;
   color: #f7f4ee;
   display: flex;
@@ -544,6 +558,47 @@ onUnmounted(() => {
   flex-direction: column;
   justify-content: center;
   padding: 2.5rem 0;
+}
+
+.voice-error-banner {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 0.6rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.88rem;
+  margin-bottom: 1.5rem;
+  max-width: 90%;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 1.1rem;
+}
+
+.error-msg {
+  font-weight: 500;
+}
+
+.retry-mic-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.retry-mic-btn:hover {
+  background: #dc2626;
 }
 
 .voice-transcript-banner {
