@@ -207,13 +207,22 @@ const formatMarkdown = (text: string): string => {
               title="Pengaturan API Key"
               aria-label="Pengaturan API Key"
             >
-              ⚙️
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ctrl-svg">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
             </button>
             <button class="ctrl-btn" @click="clearChat" title="Hapus Riwayat Chat" aria-label="Hapus Chat">
-              🗑️
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ctrl-svg">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
             </button>
             <button class="ctrl-btn close-btn" @click="closeWidget" title="Tutup Chat" aria-label="Tutup Chat">
-              ✕
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ctrl-svg">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
           </div>
         </div>
@@ -331,11 +340,14 @@ const formatMarkdown = (text: string): string => {
               :disabled="!inputPrompt.trim() || isLoading"
               title="Kirim Pertanyaan"
             >
-              <span>➔</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="send-svg">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
             </button>
           </form>
           <div class="footer-hint">
-            <span>💡 Tips: Tuliskan bahan kulkas Anda, misal: <em>"Punya telur &amp; kecap"</em></span>
+            <span>Tuliskan bahan yang tersedia, misal: <em>"Punya telur &amp; kecap"</em></span>
           </div>
         </div>
       </div>
@@ -537,10 +549,14 @@ const formatMarkdown = (text: string): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
   color: var(--text-muted);
   background: transparent;
   transition: all 0.2s ease;
+}
+
+.ctrl-svg {
+  width: 16px;
+  height: 16px;
 }
 
 .ctrl-btn:hover {
@@ -553,9 +569,9 @@ const formatMarkdown = (text: string): string => {
   color: var(--primary);
 }
 
-.close-btn {
-  font-size: 1rem;
-  font-weight: 700;
+.close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 /* Settings Drawer */
@@ -875,8 +891,14 @@ const formatMarkdown = (text: string): string => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
   transition: transform 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.send-svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
 }
 
 .send-btn:hover:not(:disabled) {

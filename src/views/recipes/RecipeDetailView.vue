@@ -130,7 +130,12 @@ const goBackToCatalog = () => {
           @click="startCookingMode(0)"
           title="Mulai memasak dengan perintah suara tanpa sentuh layar"
         >
-          <span>🎙️ Mode Masak Hands-Free</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="22"/>
+          </svg>
+          <span>Mode Masak Hands-Free</span>
         </button>
 
         <button
@@ -138,11 +143,18 @@ const goBackToCatalog = () => {
           :class="{ 'fav-active': isFavorite(recipe.id) }"
           @click="toggleFavorite(recipe.id)"
         >
-          <span>{{ isFavorite(recipe.id) ? '❤️ Tersimpan di Favorit' : '🤍 Tambah ke Favorit' }}</span>
+          <svg viewBox="0 0 24 24" :fill="isFavorite(recipe.id) ? '#ef4444' : 'none'" :stroke="isFavorite(recipe.id) ? '#ef4444' : 'currentColor'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+          </svg>
+          <span>{{ isFavorite(recipe.id) ? 'Tersimpan di Favorit' : 'Tambah ke Favorit' }}</span>
         </button>
 
         <button class="btn-action-pill" @click="shareRecipe">
-          <span>🔗 {{ copyLinkSuccess ? 'Tautan Disalin!' : 'Bagikan' }}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="action-svg">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+          <span>{{ copyLinkSuccess ? 'Tautan Disalin!' : 'Bagikan' }}</span>
         </button>
       </div>
     </div>
@@ -152,24 +164,40 @@ const goBackToCatalog = () => {
       <div class="header-tags">
         <!-- Clickable Category Badge (Child -> Parent-Child Cross-link) -->
         <RouterLink :to="`/categories/${recipe.categorySlug}`" class="category-link-tag">
-          🏷️ {{ recipe.categoryName }}
+          {{ recipe.categoryName }}
         </RouterLink>
 
         <span class="difficulty-tag" :class="`badge-difficulty-${recipe.difficulty.toLowerCase()}`">
           {{ recipe.difficulty }}
         </span>
 
-        <span class="origin-tag">📍 {{ recipe.origin }}</span>
+        <span class="origin-tag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tag-svg">
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span>{{ recipe.origin }}</span>
+        </span>
       </div>
 
       <h1 class="detail-title">{{ recipe.title }}</h1>
       <p class="detail-desc">{{ recipe.description }}</p>
 
       <div class="chef-credit">
-        <span class="chef-avatar">👨‍🍳</span>
+        <div class="chef-avatar-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chef-avatar-svg">
+            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+            <line x1="6" y1="17" x2="18" y2="17"/>
+          </svg>
+        </div>
         <span>Resep dikurasi oleh <strong>{{ recipe.chefName }}</strong></span>
         <span class="dot">•</span>
-        <span class="rating-highlight">⭐ {{ recipe.rating }} ({{ recipe.reviewsCount }} ulasan)</span>
+        <span class="rating-highlight">
+          <svg viewBox="0 0 24 24" fill="#f59e0b" stroke="#f59e0b" stroke-width="1.5" class="rating-star-svg">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+          <span>{{ recipe.rating }} ({{ recipe.reviewsCount }} ulasan)</span>
+        </span>
       </div>
     </div>
 
@@ -183,7 +211,12 @@ const goBackToCatalog = () => {
         <h3 class="stats-title">Ringkasan Memasak</h3>
 
         <div class="stat-row">
-          <div class="stat-icon-wrap">⏱️</div>
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-svg">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
           <div class="stat-text">
             <span class="stat-label">Total Waktu</span>
             <span class="stat-val">{{ recipe.totalTimeMinutes }} Menit</span>
@@ -191,7 +224,12 @@ const goBackToCatalog = () => {
         </div>
 
         <div class="stat-row">
-          <div class="stat-icon-wrap">🥣</div>
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-svg">
+              <path d="M12 22a8 8 0 0 0 8-8H4a8 8 0 0 0 8 8Z"/>
+              <path d="M18 10a6 6 0 0 0-12 0"/>
+            </svg>
+          </div>
           <div class="stat-text">
             <span class="stat-label">Persiapan Bahan</span>
             <span class="stat-val">{{ recipe.prepTimeMinutes }} Menit</span>
@@ -199,7 +237,13 @@ const goBackToCatalog = () => {
         </div>
 
         <div class="stat-row">
-          <div class="stat-icon-wrap">🍳</div>
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-svg">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+          </div>
           <div class="stat-text">
             <span class="stat-label">Durasi Memasak</span>
             <span class="stat-val">{{ recipe.cookTimeMinutes }} Menit</span>
@@ -207,7 +251,11 @@ const goBackToCatalog = () => {
         </div>
 
         <div class="stat-row">
-          <div class="stat-icon-wrap">🔥</div>
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="stat-svg">
+              <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+          </div>
           <div class="stat-text">
             <span class="stat-label">Estimasi Energi</span>
             <span class="stat-val">{{ recipe.caloriesPerServing }} kkal / porsi</span>
@@ -431,12 +479,21 @@ const goBackToCatalog = () => {
   gap: 0.4rem;
   background: var(--bg-surface);
   border: 1px solid var(--border-light);
-  padding: 0.55rem 1rem;
+  padding: 0.55rem 1.1rem;
   border-radius: var(--radius-full);
   font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-main);
   box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.action-svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 .btn-action-pill:hover {
@@ -445,18 +502,18 @@ const goBackToCatalog = () => {
 }
 
 .btn-action-pill.btn-handsfree-trigger {
-  background: linear-gradient(135deg, #ea580c, #c2410c);
+  background: linear-gradient(135deg, #c2410c, #9a3412);
   color: white;
   border-color: transparent;
-  box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3);
+  box-shadow: 0 3px 10px rgba(194, 65, 12, 0.3);
   font-weight: 700;
 }
 
 .btn-action-pill.btn-handsfree-trigger:hover {
-  background: linear-gradient(135deg, #c2410c, #9a3412);
+  background: linear-gradient(135deg, #9a3412, #7c2d12);
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(234, 88, 12, 0.4);
+  box-shadow: 0 5px 15px rgba(194, 65, 12, 0.4);
 }
 
 .btn-action-pill.fav-active {
@@ -486,6 +543,7 @@ const goBackToCatalog = () => {
   padding: 0.35rem 0.85rem;
   border-radius: var(--radius-full);
   transition: all 0.2s ease;
+  border: 1px solid var(--primary-border);
 }
 
 .category-link-tag:hover {
@@ -508,6 +566,15 @@ const goBackToCatalog = () => {
   font-weight: 600;
   padding: 0.35rem 0.85rem;
   border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.tag-svg {
+  width: 13px;
+  height: 13px;
+  color: var(--primary);
 }
 
 .detail-title {
@@ -529,13 +596,26 @@ const goBackToCatalog = () => {
 .chef-credit {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-.chef-avatar {
-  font-size: 1.2rem;
+.chef-avatar-wrap {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chef-avatar-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .dot {
@@ -545,6 +625,14 @@ const goBackToCatalog = () => {
 .rating-highlight {
   font-weight: 700;
   color: #b45309;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.rating-star-svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Media & Stats Grid */
@@ -598,11 +686,17 @@ const goBackToCatalog = () => {
   width: 44px;
   height: 44px;
   border-radius: var(--radius-md);
-  background: var(--bg-subtle);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.stat-svg {
+  width: 20px;
+  height: 20px;
 }
 
 .stat-text {

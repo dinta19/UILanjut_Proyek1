@@ -32,7 +32,7 @@ const activeTab = ref<'conversion' | 'storage' | 'faq'>('conversion')
         :class="{ active: activeTab === 'conversion' }"
         @click="activeTab = 'conversion'"
       >
-        <span>⚖️ Tabel Konversi Takaran</span>
+        <span>Tabel Konversi Takaran</span>
       </button>
 
       <button
@@ -40,7 +40,7 @@ const activeTab = ref<'conversion' | 'storage' | 'faq'>('conversion')
         :class="{ active: activeTab === 'storage' }"
         @click="activeTab = 'storage'"
       >
-        <span>🌿 Tips Menyimpan Bahan</span>
+        <span>Tips Menyimpan Bahan</span>
       </button>
 
       <button
@@ -48,7 +48,7 @@ const activeTab = ref<'conversion' | 'storage' | 'faq'>('conversion')
         :class="{ active: activeTab === 'faq' }"
         @click="activeTab = 'faq'"
       >
-        <span>❓ FAQ &amp; Tentang CookBook</span>
+        <span>FAQ &amp; Tentang CookBook</span>
       </button>
     </div>
 

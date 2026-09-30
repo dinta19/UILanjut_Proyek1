@@ -105,7 +105,10 @@ const resetFilters = () => {
     <div class="filter-toolbar">
       <!-- Search Input -->
       <div class="search-field">
-        <span class="field-icon">🔍</span>
+        <svg class="field-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
         <input
           v-model="searchQuery"
           type="text"
@@ -148,7 +151,7 @@ const resetFilters = () => {
         :class="{ active: selectedCategory === 'all' }"
         @click="selectedCategory = 'all'"
       >
-        <span>🍽️ Semua Kategori</span>
+        <span>Semua Kategori</span>
       </button>
 
       <button
@@ -264,9 +267,12 @@ const resetFilters = () => {
   position: relative;
 }
 
-.field-icon {
-  margin-right: 0.5rem;
-  opacity: 0.6;
+.field-icon-svg {
+  width: 17px;
+  height: 17px;
+  margin-right: 0.6rem;
+  color: var(--text-light);
+  flex-shrink: 0;
 }
 
 .filter-input {

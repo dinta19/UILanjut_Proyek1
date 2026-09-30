@@ -114,8 +114,8 @@ const closeCookingMode = () => {
     <!-- Academic Novelty Banner / Hero Header -->
     <header class="pantry-hero">
       <div class="hero-badge">
-        <span class="badge-icon">🧠</span>
-        <span>Fitur Kebaharuan TA: Algoritma Pencocokan Bahan & Jaccard Similarity</span>
+        <span class="badge-dot"></span>
+        <span>Algoritma Pencocokan Bahan &amp; Jaccard Similarity</span>
       </div>
       <h1 class="pantry-title">Smart Pantry: "Apa Isi Kulkasmu Hari Ini?"</h1>
       <p class="pantry-subtitle">
@@ -139,7 +139,11 @@ const closeCookingMode = () => {
             class="btn-clear-pantry"
             @click="clearAllIngredients"
           >
-            🗑️ Kosongkan
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="trash-svg">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span>Kosongkan</span>
           </button>
         </div>
 
@@ -275,21 +279,26 @@ const closeCookingMode = () => {
               :class="{ active: matchFilter === 'ready' }"
               @click="matchFilter = 'ready'"
             >
-              🎉 Siap Masak 100% ({{ readyToCookCount }})
+              <span>Siap Masak 100% ({{ readyToCookCount }})</span>
             </button>
             <button
               class="filter-pill-btn"
               :class="{ active: matchFilter === 'high' }"
               @click="matchFilter = 'high'"
             >
-              ≥ 50% Bahan Ada
+              <span>&ge; 50% Bahan Ada</span>
             </button>
           </div>
         </div>
 
         <!-- Empty State if no recipes match filter -->
         <div v-if="filteredResults.length === 0" class="empty-results-box">
-          <span class="empty-icon">🍳</span>
+          <div class="empty-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="empty-svg">
+              <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+              <line x1="6" y1="17" x2="18" y2="17"/>
+            </svg>
+          </div>
           <h3>Belum Ada Resep yang Cocok</h3>
           <p>
             Coba tambahkan beberapa bahan pokok populer seperti <strong>Telur</strong>,
@@ -322,11 +331,17 @@ const closeCookingMode = () => {
 
             <div class="card-info-col">
               <div class="card-top-row">
-                <span class="cat-pill">🏷️ {{ item.recipe.categoryName }}</span>
+                <span class="cat-pill">{{ item.recipe.categoryName }}</span>
                 <span class="jaccard-metric-tag" title="Koefisien Jaccard Similarity (0 s/d 1.0)">
                   Jaccard: <strong>{{ item.jaccardSimilarity }}</strong>
                 </span>
-                <span class="time-meta">⏱️ {{ item.recipe.totalTimeMinutes }} mnt</span>
+                <span class="time-meta">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-inline-svg">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span>{{ item.recipe.totalTimeMinutes }} mnt</span>
+                </span>
               </div>
 
               <h3 class="card-recipe-title">
@@ -383,7 +398,12 @@ const closeCookingMode = () => {
                   @click="openCookingMode(item.recipe)"
                   title="Langsung mulai masak dengan asisten suara hands-free"
                 >
-                  🎙️ Mode Masak Hands-Free
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-mic-svg">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="22"/>
+                  </svg>
+                  <span>Mode Masak Hands-Free</span>
                 </button>
               </div>
             </div>
@@ -497,6 +517,14 @@ const closeCookingMode = () => {
   font-size: 0.82rem;
   color: #dc2626;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.trash-svg {
+  width: 14px;
+  height: 14px;
 }
 
 .btn-clear-pantry:hover {
@@ -845,6 +873,15 @@ const closeCookingMode = () => {
   color: var(--text-muted);
   font-weight: 600;
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.meta-inline-svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-light);
 }
 
 .card-recipe-title {
@@ -958,16 +995,21 @@ const closeCookingMode = () => {
   font-size: 0.88rem;
   font-weight: 700;
   color: white;
-  background: linear-gradient(135deg, #ea580c, #c2410c);
-  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  background: linear-gradient(135deg, #c2410c, #9a3412);
+  box-shadow: 0 2px 8px rgba(194, 65, 12, 0.25);
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
+}
+
+.btn-mic-svg {
+  width: 15px;
+  height: 15px;
 }
 
 .btn-handsfree-action:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.35);
+  box-shadow: 0 4px 14px rgba(194, 65, 12, 0.35);
 }
 
 /* Empty box */
@@ -980,10 +1022,22 @@ const closeCookingMode = () => {
   color: var(--text-muted);
 }
 
-.empty-icon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 1rem;
+.empty-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem auto;
+}
+
+.empty-svg {
+  width: 28px;
+  height: 28px;
 }
 
 .empty-results-box h3 {
